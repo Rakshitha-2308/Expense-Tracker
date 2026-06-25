@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/static/android-chrome-512x512.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expense Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F7F6F2; --white: #FFFFFF; --accent: #6B8F71;
+    --accent2: #C17C5A; --red: #E07070; --blue: #5A7FA6;
+    --border: #E4E0D8; --text: #2C2C2C; --sub: #9A9590;
+    --highlight: #EAF2EB; --input: #F0EDE8;
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    background: var(--white); border-bottom: 1px solid var(--border);
+    padding: 16px 20px; display: flex; justify-content: space-between;
+    align-items: center; position: sticky; top: 0; z-index: 100;
+  }
+  .header h1 { font-family: 'Playfair Display', serif; font-size: 20px; }
+  .header .dt { font-size: 11px; color: var(--sub); }
+
+  /* TABS */
+  .tabs { display: flex; background: var(--white); border-bottom: 1px solid var(--border); padding: 0 12px; }
+  .tab-btn {
+    padding: 13px 18px; border: none; background: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    color: var(--sub); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+
+  /* CONTENT */
+  .content { padding: 14px; max-width: 580px; margin: 0 auto; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* CARD */
+  .card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+  .card-title { font-family: 'Playfair Display', serif; font-size: 15px; margin-bottom: 12px; }
+
+  /* INPUTS */
+  .input-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .input-group { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 110px; }
+  .input-group label { font-size: 11px; color: var(--sub); font-weight: 500; }
+  input[type="text"], input[type="number"], input[type="date"] {
+    background: var(--input); border: 1px solid var(--border); border-radius: 8px;
+    padding: 9px 12px; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    color: var(--text); width: 100%; outline: none;
+  }
+  input:focus { border-color: var(--accent); }
+
+  /* BUTTONS */
+  .btn {
+    padding: 9px 16px; border: none; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.82; }
+  .btn-green  { background: var(--accent);  color: white; }
+  .btn-red    { background: var(--red);     color: white; }
+  .btn-blue   { background: var(--blue);    color: white; }
+  .btn-gray   { background: var(--border);  color: var(--text); }
+  .btn-sm     { padding: 7px 12px; font-size: 12px; }
+  .btn-row    { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+
+  /* TOTAL BAR */
+  .total-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 0 2px; }
+  .total-amt { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--accent); }
+
+  /* EXPENSE LIST */
+  .expense-list { display: flex; flex-direction: column; gap: 6px; }
+  .expense-item {
+    display: flex; justify-content: space-between; align-items: center;
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; cursor: pointer; transition: background 0.15s;
+  }
+  .expense-item:hover    { background: var(--highlight); }
+  .expense-item.selected { background: var(--highlight); border-color: var(--accent); }
+  .exp-name { font-size: 14px; font-weight: 500; }
+  .exp-date { font-size: 11px; color: var(--sub); margin-top: 2px; }
+  .exp-amt  { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--accent2); white-space: nowrap; }
+  .empty    { text-align: center; color: var(--sub); font-size: 14px; padding: 24px 0; }
+
+  /* CALENDAR */
+  .cal-nav { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .cal-nav h2 { font-family: 'Playfair Display', serif; font-size: 17px; flex: 1; text-align: center; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 12px; }
+  .cal-day-name { text-align: center; font-size: 10px; font-weight: 600; color: var(--sub); padding: 5px 0; }
+  .cal-day {
+    text-align: center; border-radius: 8px; font-size: 12px;
+    cursor: pointer; background: var(--white); border: 1px solid var(--border);
+    transition: all 0.15s; padding: 5px 2px; min-height: 46px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  }
+  .cal-day:hover      { background: var(--highlight); }
+  .cal-day.empty      { background: none; border: none; cursor: default; }
+  .cal-day.has-exp    { background: var(--highlight); border-color: var(--accent); }
+  .cal-day.today      { background: var(--accent); color: white; border-color: var(--accent); font-weight: 700; }
+  .cal-day.today:hover { opacity: 0.85; }
+  .cal-day.today.has-exp { background: var(--accent); }
+  .cal-day .day-num   { font-weight: 600; font-size: 13px; }
+  .cal-day .day-amt   { font-size: 9px; color: var(--accent); font-weight: 600; }
+  .cal-day.today .day-amt { color: rgba(255,255,255,0.85); }
+
+  /* DAY DETAIL */
+  .day-detail-title { font-family: 'Playfair Display', serif; font-size: 15px; margin-bottom: 10px; }
+  .day-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .day-item:last-child { border-bottom: none; }
+  .day-total { text-align: right; font-family: 'Playfair Display', serif; font-size: 15px; color: var(--accent); margin-top: 8px; }
+
+  /* SAVINGS */
+  .total-saved { font-family: 'Playfair Display', serif; font-size: 26px; color: var(--blue); margin: 6px 0 14px; }
+  .week-info   { font-size: 11px; color: var(--sub); margin-top: 8px; }
+
+  /* MONTH GROUP */
+  .month-group { margin-bottom: 18px; }
+  .month-label {
+    font-family: 'Playfair Display', serif; font-size: 15px;
+    color: var(--text); padding: 8px 4px 10px;
+    border-bottom: 2px solid var(--border); margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .month-total { font-size: 13px; color: var(--blue); font-family: 'DM Sans', sans-serif; font-weight: 600; }
+  .week-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 11px 16px; background: var(--white); border: 1px solid var(--border);
+    border-radius: 10px; margin-bottom: 6px;
+  }
+  .week-row-label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .week-row-date  { font-size: 11px; color: var(--sub); margin-top: 2px; }
+  .week-row-amt   { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--blue); white-space: nowrap; }
+  .month-sum-row  {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 16px; background: var(--highlight); border: 1px solid var(--accent);
+    border-radius: 10px; margin-top: 4px;
+  }
+  .month-sum-label { font-size: 12px; font-weight: 600; color: var(--accent); }
+  .month-sum-amt   { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--accent); }
+  .sav-item    { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .sav-item:last-child { border-bottom: none; }
+  .sav-week    { font-size: 11px; color: var(--sub); margin-top: 2px; }
+  .sav-amt     { font-family: 'Playfair Display', serif; font-size: 15px; color: var(--blue); white-space: nowrap; }
+
+  /* POPUP */
+  .popup-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; justify-content: center; align-items: center; }
+  .popup-overlay.show { display: flex; }
+  .popup { background: var(--white); border-radius: 16px; padding: 26px; width: 88%; max-width: 340px; border-top: 5px solid var(--accent); }
+  .popup h2 { font-family: 'Playfair Display', serif; font-size: 19px; margin-bottom: 6px; }
+  .popup p  { font-size: 13px; color: var(--sub); margin-bottom: 14px; }
+
+  @media (max-width: 380px) {
+    .cal-day { min-height: 40px; font-size: 11px; }
+    .tab-btn { padding: 12px 12px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Expense Tracker</h1>
+  <span class="dt" id="today-date"></span>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('expenses', this)">Expenses</button>
+  <button class="tab-btn"        onclick="switchTab('calendar', this)">Calendar</button>
+  <button class="tab-btn"        onclick="switchTab('savings',  this)">Savings</button>
+</div>
+
+<div class="content">
+
+  <!-- EXPENSES -->
+  <div class="tab-panel active" id="tab-expenses">
+    <div class="card">
+      <div class="card-title">Add Expense</div>
+      <div class="input-row">
+        <div class="input-group">
+          <label>Name</label>
+          <input type="text" id="exp-name" placeholder="e.g. Zomato">
+        </div>
+        <div class="input-group" style="max-width:130px">
+          <label>Amount (Rs)</label>
+          <input type="number" id="exp-amt" placeholder="0.00">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green" onclick="addExpense()">+ Add</button>
+        <button class="btn btn-red"   onclick="deleteExpense()">Delete Selected</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Search & Filter</div>
+      <div class="input-row">
+        <div class="input-group">
+          <label>Search by name</label>
+          <input type="text" id="search" placeholder="e.g. food, bus, zomato...">
+        </div>
+      </div>
+      <div class="input-row">
+        <div class="input-group">
+          <label>From Date</label>
+          <input type="date" id="from-date">
+        </div>
+        <div class="input-group">
+          <label>To Date</label>
+          <input type="date" id="to-date">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-green btn-sm" onclick="loadExpenses()">Apply</button>
+        <button class="btn btn-gray  btn-sm" onclick="thisMonth()">This Month</button>
+        <button class="btn btn-gray  btn-sm" onclick="clearFilter()">Show All</button>
+      </div>
+    </div>
+
+    <div class="total-bar">
+      <span style="font-size:12px;color:var(--sub)" id="exp-label">All expenses</span>
+      <span class="total-amt" id="exp-total">Rs 0.00</span>
+    </div>
+    <div class="expense-list" id="expense-list">
+      <div class="empty">No expenses yet.</div>
+    </div>
+  </div>
+
+  <!-- CALENDAR -->
+  <div class="tab-panel" id="tab-calendar">
+    <div class="card">
+      <div class="cal-nav">
+        <button class="btn btn-gray  btn-sm" onclick="calPrev()">◀</button>
+        <h2 id="cal-title"></h2>
+        <button class="btn btn-gray  btn-sm" onclick="calNext()">▶</button>
+        <button class="btn btn-green btn-sm" onclick="calToday()">Today</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+
+    <div class="card" id="day-detail" style="display:none">
+      <div class="day-detail-title" id="day-detail-title"></div>
+      <div id="day-items"></div>
+      <div class="day-total" id="day-total"></div>
+    </div>
+  </div>
+
+  <!-- SAVINGS -->
+  <div class="tab-panel" id="tab-savings">
+    <div class="card">
+      <div class="card-title">Weekly Savings</div>
+      <p style="font-size:12px;color:var(--sub);margin-bottom:8px">Log your savings at the end of each week</p>
+      <div class="total-saved" id="total-saved">Rs 0.00</div>
+      <div class="input-row">
+        <div class="input-group" style="max-width:160px">
+          <label>Amount (Rs)</label>
+          <input type="number" id="sav-amt" placeholder="0.00">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-blue" onclick="addSaving()">Log Saving</button>
+      </div>
+      <div class="week-info" id="week-info"></div>
+    </div>
+
+    <div class="card-title" style="padding: 0 4px 8px">Savings History</div>
+    <div id="savings-list"><div class="empty">No savings logged yet.</div></div>
+  </div>
+
+</div>
+
+<!-- WEEKEND POPUP -->
+<div class="popup-overlay" id="popup">
+  <div class="popup">
+    <h2 id="popup-title">End of Week 🌿</h2>
+    <p id="popup-msg">How much would you like to save this week?</p>
+    <div class="input-group" style="margin-bottom:14px" id="popup-amt-label">
+      <label>Amount (Rs)</label>
+      <input type="number" id="popup-amt" placeholder="0.00">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-blue" id="popup-save-btn" onclick="popupSave()">Save</button>
+      <button class="btn btn-gray" onclick="closePopup()">Skip</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── state
+  let selectedId = null;
+  let calYear    = new Date().getFullYear();
+  let calMonth   = new Date().getMonth() + 1;
+  let popupWeek  = "";
+
+  const MONTHS = ["","January","February","March","April","May","June",
+                  "July","August","September","October","November","December"];
+
+  // today date in header
+  const now = new Date();
+  document.getElementById("today-date").textContent =
+    now.toLocaleDateString("en-IN", {day:"numeric", month:"long", year:"numeric"});
+
+  // ── TABS
+  function switchTab(tab, btn) {
+    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.getElementById("tab-" + tab).classList.add("active");
+    btn.classList.add("active");
+    if (tab === "calendar") drawCalendar();
+    if (tab === "savings")  loadSavings();
+  }
+
+  // ── EXPENSES
+  async function loadExpenses() {
+    const keyword   = document.getElementById("search").value.trim();
+    const from_date = document.getElementById("from-date").value;
+    const to_date   = document.getElementById("to-date").value;
+
+    const url  = `/api/expenses?keyword=${encodeURIComponent(keyword)}&from_date=${from_date}&to_date=${to_date}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+
+    const total = data.reduce((s, r) => s + r.amount, 0);
+    document.getElementById("exp-total").textContent = `Rs ${total.toFixed(2)}`;
+
+    let lbl = "All expenses";
+    if (keyword) lbl = `Search: "${keyword}"`;
+    else if (from_date || to_date) lbl = `${from_date || "start"} → ${to_date || "today"}`;
+    document.getElementById("exp-label").textContent = lbl;
+
+    const list = document.getElementById("expense-list");
+    if (data.length === 0) {
+      list.innerHTML = '<div class="empty">No expenses found.</div>';
+      return;
+    }
+    list.innerHTML = data.map(r => `
+      <div class="expense-item ${selectedId === r.id ? "selected" : ""}"
+           onclick="selectExp(${r.id}, this)">
+        <div>
+          <div class="exp-name">${r.name}</div>
+          <div class="exp-date">${r.date}</div>
+        </div>
+        <div class="exp-amt">Rs ${r.amount.toFixed(2)}</div>
+      </div>
+    `).join("");
+  }
+
+  function selectExp(id, el) {
+    selectedId = id;
+    document.querySelectorAll(".expense-item").forEach(e => e.classList.remove("selected"));
+    el.classList.add("selected");
+  }
+
+  async function addExpense() {
+    const name = document.getElementById("exp-name").value.trim();
+    const amt  = document.getElementById("exp-amt").value.trim();
+    if (!name)             { alert("Please enter expense name."); return; }
+    if (!amt || +amt <= 0) { alert("Enter a valid amount.");       return; }
+    await fetch("/api/expenses/add", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({name, amount: amt})
+    });
+    document.getElementById("exp-name").value = "";
+    document.getElementById("exp-amt").value  = "";
+    loadExpenses();
+  }
+
+  async function deleteExpense() {
+    if (!selectedId) { alert("Tap an expense to select it first."); return; }
+    if (!confirm("Delete this expense?")) return;
+    await fetch(`/api/expenses/delete/${selectedId}`, {method:"DELETE"});
+    selectedId = null;
+    loadExpenses();
+  }
+
+  function thisMonth() {
+    const n = new Date();
+    const f = new Date(n.getFullYear(), n.getMonth(), 1);
+    document.getElementById("from-date").value = f.toISOString().split("T")[0];
+    document.getElementById("to-date").value   = n.toISOString().split("T")[0];
+    document.getElementById("search").value    = "";
+    loadExpenses();
+  }
+
+  function clearFilter() {
+    document.getElementById("search").value    = "";
+    document.getElementById("from-date").value = "";
+    document.getElementById("to-date").value   = "";
+    loadExpenses();
+  }
+
+  // ── CALENDAR
+  async function drawCalendar() {
+    document.getElementById("cal-title").textContent = `${MONTHS[calMonth]} ${calYear}`;
+    document.getElementById("day-detail").style.display = "none";
+
+    const res  = await fetch(`/api/calendar/${calYear}/${calMonth}`);
+    const data = await res.json();
+
+    const totMap = {};
+    data.forEach(r => totMap[r.date] = r.total);
+
+    const todayStr = new Date().toISOString().split("T")[0];
+    const grid     = document.getElementById("cal-grid");
+    grid.innerHTML = "";
+
+    // day headers
+    ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].forEach(d => {
+      const el = document.createElement("div");
+      el.className = "cal-day-name";
+      el.textContent = d;
+      grid.appendChild(el);
+    });
+
+    // offset so 1st lands on correct weekday (Mon=0)
+    const firstDay = new Date(calYear, calMonth - 1, 1).getDay();
+    const offset   = firstDay === 0 ? 6 : firstDay - 1;
+    for (let i = 0; i < offset; i++) {
+      const el = document.createElement("div");
+      el.className = "cal-day empty";
+      grid.appendChild(el);
+    }
+
+    const daysInMonth = new Date(calYear, calMonth, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dStr = `${calYear}-${String(calMonth).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const el   = document.createElement("div");
+      el.className = "cal-day";
+
+      const numEl = document.createElement("div");
+      numEl.className = "day-num";
+      numEl.textContent = d;
+      el.appendChild(numEl);
+
+      if (totMap[dStr]) {
+        const amtEl = document.createElement("div");
+        amtEl.className = "day-amt";
+        amtEl.textContent = `Rs ${totMap[dStr].toFixed(0)}`;
+        el.appendChild(amtEl);
+        el.classList.add("has-exp");
+      }
+
+      if (dStr === todayStr) {
+        el.classList.add("today");
+        el.classList.remove("has-exp"); // today style overrides, amt still shows
+        if (totMap[dStr]) el.classList.add("today"); // keep amt visible inside today
+      }
+
+      el.onclick = () => showDay(dStr, d);
+      grid.appendChild(el);
+    }
+  }
+
+  async function showDay(dStr, day) {
+    const res  = await fetch(`/api/calendar/day/${dStr}`);
+    const data = await res.json();
+
+    const detail = document.getElementById("day-detail");
+    detail.style.display = "block";
+    document.getElementById("day-detail-title").textContent =
+      `${MONTHS[calMonth]} ${day}, ${calYear}`;
+
+    const items = document.getElementById("day-items");
+    if (data.length === 0) {
+      items.innerHTML = '<div class="empty">No expenses on this day.</div>';
+      document.getElementById("day-total").textContent = "";
+      return;
+    }
+    const total = data.reduce((s, r) => s + r.amount, 0);
+    items.innerHTML = data.map(r => `
+      <div class="day-item">
+        <span>${r.name}</span>
+        <span style="color:var(--accent2);font-weight:600">Rs ${r.amount.toFixed(2)}</span>
+      </div>
+    `).join("");
+    document.getElementById("day-total").textContent = `Day Total: Rs ${total.toFixed(2)}`;
+  }
+
+  function calPrev()  {
+    if (calMonth === 1) { calMonth = 12; calYear--; } else calMonth--;
+    drawCalendar();
+  }
+  function calNext()  {
+    if (calMonth === 12) { calMonth = 1; calYear++; } else calMonth++;
+    drawCalendar();
+  }
+  function calToday() {
+    calMonth = new Date().getMonth() + 1;
+    calYear  = new Date().getFullYear();
+    drawCalendar();
+  }
+
+  // ── SAVINGS — month-grouped week 1/2/3/4
+  async function loadSavings() {
+    const res  = await fetch("/api/savings");
+    const data = await res.json();
+
+    document.getElementById("total-saved").textContent = `Rs ${data.total.toFixed(2)}`;
+
+    // current week range display
+    const n   = new Date();
+    const mon = new Date(n); mon.setDate(n.getDate() - ((n.getDay() + 6) % 7));
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    document.getElementById("week-info").textContent =
+      `Current week: ${mon.toLocaleDateString("en-IN",{day:"numeric",month:"short"})} – ${sun.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}`;
+
+    const list = document.getElementById("savings-list");
+    if (data.savings.length === 0) {
+      list.innerHTML = '<div class="empty">No savings logged yet.</div>';
+      return;
+    }
+
+    // group by "YYYY-MM"
+    const groups = {};
+    data.savings.forEach(r => {
+      const key = r.date.slice(0, 7);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(r);
+    });
+
+    // sort months newest first
+    const sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+    list.innerHTML = sortedKeys.map(key => {
+      const [yr, mo]  = key.split("-");
+      const monthName = MONTHS[parseInt(mo)];
+      // oldest first so Week 1 = first entry of the month
+      const entries   = groups[key].slice().sort((a, b) => a.date.localeCompare(b.date));
+      const monthSum  = entries.reduce((s, r) => s + r.amount, 0);
+
+      const weekRows = entries.map((r, idx) => `
+        <div class="week-row">
+          <div>
+            <div class="week-row-label">Week ${idx + 1}</div>
+            <div class="week-row-date">Logged on ${r.date}</div>
+          </div>
+          <div class="week-row-amt">Rs ${r.amount.toFixed(2)}</div>
+        </div>
+      `).join("");
+
+      return `
+        <div class="month-group">
+          <div class="month-label"><span>${monthName} ${yr}</span></div>
+          ${weekRows}
+          <div class="month-sum-row">
+            <span class="month-sum-label">Total saved in ${monthName}</span>
+            <span class="month-sum-amt">Rs ${monthSum.toFixed(2)}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  async function addSaving() {
+    const amt = document.getElementById("sav-amt").value.trim();
+    if (!amt || +amt <= 0) { alert("Enter a valid amount."); return; }
+    const res  = await fetch("/api/savings/add", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({amount: amt})
+    });
+    const data = await res.json();
+    document.getElementById("sav-amt").value = "";
+    loadSavings();
+    alert(`Rs ${parseFloat(amt).toFixed(2)} saved for ${data.week}!`);
+  }
+
+  // ── WEEKEND POPUP — Sunday saves, Saturday reminds
+  async function checkWeekend() {
+    const res  = await fetch("/api/savings/week_check");
+    const data = await res.json();
+    const day  = new Date().getDay(); // 0=Sun, 6=Sat
+
+    if (day === 0 && !data.week_exists) {
+      // Sunday — full savings popup
+      popupWeek = data.week_label;
+      document.getElementById("popup-title").textContent = "End of Week 🌿";
+      document.getElementById("popup-msg").textContent =
+        `You spent Rs ${data.week_total.toFixed(2)} this week. How much would you like to save?`;
+      document.getElementById("popup-save-btn").style.display = "inline-flex";
+      document.getElementById("popup-amt").style.display      = "block";
+      document.getElementById("popup-amt-label").style.display = "block";
+      document.getElementById("popup").classList.add("show");
+
+    } else if (day === 6 && !data.week_exists) {
+      // Saturday — reminder only, no input
+      document.getElementById("popup-title").textContent = "Savings Reminder 🔔";
+      document.getElementById("popup-msg").textContent =
+        `Tomorrow is Sunday! You've spent Rs ${data.week_total.toFixed(2)} this week. Remember to log your savings tomorrow.`;
+      document.getElementById("popup-save-btn").style.display  = "none";
+      document.getElementById("popup-amt").style.display       = "none";
+      document.getElementById("popup-amt-label").style.display = "none";
+      document.getElementById("popup").classList.add("show");
+    }
+  }
+
+  async function popupSave() {
+    const amt = document.getElementById("popup-amt").value.trim();
+    if (!amt || +amt <= 0) { alert("Enter a valid amount."); return; }
+    await fetch("/api/savings/add", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({amount: amt})
+    });
+    closePopup();
+    loadSavings();
+    alert(`Rs ${parseFloat(amt).toFixed(2)} saved!`);
+  }
+
+  function closePopup() { document.getElementById("popup").classList.remove("show"); }
+
+  // ── INIT
+  loadExpenses();
+  setTimeout(checkWeekend, 1000);
+</script>
+</body>
+</html>
